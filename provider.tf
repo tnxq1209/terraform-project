@@ -7,9 +7,9 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "proj-winters-backend"
-    key    = "proj/backend/terraform.tfstate"
-    region = "us-east-1"
+    bucket = "project-state-winters-backend"
+    key    = "project/backend/terraform.tfstate"
+    region = "ap-south-1"
   }
 }
 

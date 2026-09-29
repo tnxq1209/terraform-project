@@ -13,3 +13,12 @@ output "internet_gateway_id" {
 output "nat_gateway_ids" {
   value = module.vpc.nat_gateway_ids
 }
+output "eks_cluster_role_arn" {
+  value = module.iam.eks_cluster_role_arn
+}
+output "eks_node_role_arn" {
+  value = module.iam.eks_node_role_arn
+}
+output "oidc_issuer" {
+  value = module.eks.oidc_issuer
+}

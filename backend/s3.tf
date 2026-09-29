@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "name" {
-  bucket = "proj-winters-backend"
+  bucket = "project-state-winters-backend"
   tags = {
-    Name = "proj-winters-backend"
+    Name = "project-state-winters-backend"
   }
 }
