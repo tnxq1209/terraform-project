@@ -1,0 +1,6 @@
+region               = "ap-south-1"
+instance_name        = "jump-server"
+public_key_name      = "jump-server-key"
+public_key_path      = "/home/winters/.ssh/jump-server-key.pub"
+s3_bucket_name       = "project-state-winters-backend"
+ssh_private_key_file = "/home/winters/.ssh/jump-server-key"

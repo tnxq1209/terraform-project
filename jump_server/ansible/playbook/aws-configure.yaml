@@ -1,0 +1,40 @@
+---
+- name: Configure AWS CLI on the jump server
+  hosts: jumpservers
+  become: false
+  gather_facts: true
+
+  vars:
+    aws_region: ap-south-1
+    aws_output_format: json
+    remote_user_home: /home/ubuntu
+
+  tasks:
+    - name: Create AWS configuration directory
+      ansible.builtin.file:
+        path: "{{ remote_user_home }}/.aws"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0700"
+
+    - name: Configure default AWS CLI profile
+      ansible.builtin.copy:
+        dest: "{{ remote_user_home }}/.aws/config"
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+        content: |
+          [default]
+          region = {{ aws_region }}
+          output = {{ aws_output_format }}
+
+    - name: Verify AWS identity
+      ansible.builtin.command:
+        cmd: aws sts get-caller-identity --output json
+      register: aws_identity
+      changed_when: false
+
+    - name: Display AWS identity
+      ansible.builtin.debug:
+        var: aws_identity.stdout

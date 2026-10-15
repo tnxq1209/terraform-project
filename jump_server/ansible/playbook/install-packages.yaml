@@ -1,0 +1,116 @@
+---
+- name: setup jump server
+  hosts: jumpservers
+  become: true
+  gather_facts: true
+
+  vars:
+    # Ansible says x86_64 / aarch64; these downloads say amd64 / arm64.
+    arch: "{{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}"
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+
+    - name: Install required packages
+      apt:
+        name:
+          - git
+          - python3
+          - python3-pip
+          - ansible
+          - jq
+          - unzip
+          - gnupg
+          - curl
+          - wget
+          - ca-certificates
+          - software-properties-common
+        state: present
+
+# AWS CLI installation tasks
+    - name: Download AWS CLI zip file.
+      ansible.builtin.get_url:
+        url: "https://awscli.amazonaws.com/awscli-exe-linux-{{ ansible_facts['architecture'] }}.zip"
+        dest: /tmp/awscliv2.zip
+        mode: '0644'
+
+    - name: Unzip AWS CLI zip file.
+      ansible.builtin.unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: yes
+        creates: /tmp/aws/install
+
+    - name: Install AWS CLI.
+      ansible.builtin.command:
+        cmd: /tmp/aws/install --update
+        creates: /usr/local/bin/aws
+
+# Kubectl installation tasks
+    - name: Find the current kubectl version
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/stable.txt
+        method: GET
+        return_content: true
+        headers:
+          Cache-Control: no-cache
+      register: kubectl_release
+      changed_when: false
+
+    - name: Download kubectl binary.
+      ansible.builtin.get_url:
+        url: https://dl.k8s.io/release/{{ kubectl_release.content | trim }}/bin/linux/{{ arch }}/kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+# Helm installation tasks.
+    - name: Download Helm Package.
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4"
+        dest: /tmp/get_helm.sh
+        mode: '0700'
+
+    - name: Install Helm ansible.
+      ansible.builtin.command:
+        cmd: /tmp/get_helm.sh
+        creates: /usr/local/bin/helm
+
+# Terraform Installation tasks.
+    - name: Add HashiCorp Official DEB822 Repository
+      ansible.builtin.deb822_repository:
+        name: hashicorp
+        types: [deb]
+        uris: "https://apt.releases.hashicorp.com"
+        suites: ["{{ ansible_facts['distribution_release'] }}"]
+        components: [main]
+        signed_by: "https://apt.releases.hashicorp.com/gpg"
+        state: present
+      register: hashicorp_repo
+
+    - name: Update apt cache if the repository structure changed
+      ansible.builtin.apt:
+        update_cache: yes
+      when: hashicorp_repo.changed
+
+    - name: Install the latest version of Terraform
+      ansible.builtin.apt:
+        name: terraform
+        state: latest
+
+# Github CLI Installation tasks.    
+    - name: Add Github CLI Repository.
+      ansible.builtin.deb822_repository:
+        name: github-cli
+        types: [deb]
+        uris: "https://cli.github.com/packages"
+        suites: ["stable"]
+        components: [main]
+        signed_by: "https://cli.github.com/packages/githubcli-archive-keyring.gpg"
+        state: present
+
+    - name: install Github CLI
+      ansible.builtin.apt:
+        name: gh
+        state: present

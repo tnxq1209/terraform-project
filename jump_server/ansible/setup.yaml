@@ -1,0 +1,18 @@
+---
+# Runs all four playbooks in order.
+#
+#   ansible-playbook -i inventory.ini site.yml
+#
+# Or run any one of them on its own — they are independent.
+
+- name: Install the deployment tools
+  ansible.builtin.import_playbook: playbook/key-pre-scan.yaml
+
+- name: Configure AWS and the shell
+  ansible.builtin.import_playbook: playbook/install-packages.yaml
+
+- name: Clone the DevBoard repo
+  ansible.builtin.import_playbook: playbook/aws-configure.yaml
+
+- name: Verify the machine is ready
+  ansible.builtin.import_playbook: playbook/clone-repository.yaml

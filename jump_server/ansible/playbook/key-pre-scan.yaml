@@ -1,0 +1,62 @@
+
+---
+- name: Pre-scan jump server SSH host keys
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    target_group: jumpservers
+
+  tasks:
+    - name: Scan Ed25519 host keys
+      ansible.builtin.command:
+        argv:
+          - ssh-keyscan
+          - -T
+          - "5"
+          - -t
+          - ed25519
+          - "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups[target_group] }}"
+      register: scanned_host_keys
+      changed_when: false
+
+    - name: Fail if a host key could not be retrieved
+      ansible.builtin.assert:
+        that:
+          - item.stdout | length > 0
+        fail_msg: >-
+          No Ed25519 host key retrieved for
+          {{ hostvars[item.item]['ansible_host'] | default(item.item) }}.
+      loop: "{{ scanned_host_keys.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Display fingerprints for verification
+      ansible.builtin.debug:
+        msg: |
+          Host: {{ item.item }}
+          Address: {{ hostvars[item.item]['ansible_host'] | default(item.item) }}
+          Fingerprint:
+          {{ item.stdout | regex_replace('^', '') }}
+      loop: "{{ scanned_host_keys.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Confirm host keys were verified independently
+      ansible.builtin.pause:
+        prompt: >-
+          Verify these SSH host keys through a trusted independent source.
+          Enter VERIFIED to add them to known_hosts
+      register: verification
+
+    - name: Add verified keys to known_hosts
+      ansible.builtin.known_hosts:
+        name: "{{ hostvars[item.item]['ansible_host'] | default(item.item) }}"
+        key: "{{ item.stdout }}"
+        state: present
+      loop: "{{ scanned_host_keys.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: verification.user_input == "VERIFIED"

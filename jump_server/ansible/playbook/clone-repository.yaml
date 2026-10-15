@@ -1,0 +1,26 @@
+---
+- name: Clone DevBoard repository to jump server
+  hosts: jumpservers
+  become: true
+  gather_facts: true
+
+  vars:
+    repo_url: "https://github.com/tnxq1209/devboard.git"
+    repo_dest: "/home/ubuntu/devboard"
+
+  tasks:
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ repo_dest }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Clone or update DevBoard repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dest }}"
+        version: master
+        update: false
+      become_user: ubuntu
