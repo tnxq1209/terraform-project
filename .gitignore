@@ -2,7 +2,5 @@ terraform.tfstate.backup
 .terraform.tfstate
 .terraform/
 .terraform.lock.hcl
-terra-key
-terra-key.pub
 terraform.tfstate
-hosts.ini
+jump_server/ansible/inventory/hosts.ini
